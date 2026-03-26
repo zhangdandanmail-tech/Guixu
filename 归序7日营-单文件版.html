@@ -1,0 +1,601 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+  <title>归序7日营 · 打卡</title>
+  <link rel="stylesheet" href="style.css" />
+  <style>
+/* ===== 共享样式 ===== */
+@import url('https://fonts.googleapis.com/css2?family=Noto+Serif+SC:wght@400;600;700&family=Noto+Sans+SC:wght@300;400;500;600&display=swap');
+
+/* ===== 变量 ===== */
+:root {
+  --bg: #FDF9F3;
+  --card-bg: #FFFDF8;
+  --gold: #C9A84C;
+  --gold-light: #F5E9C8;
+  --text-dark: #3D2E1E;
+  --text-muted: #8B7355;
+  --green: #7BAE7F;
+  --green-light: #E8F4E9;
+  --border: #EDE4D8;
+  --medal-inactive: #E8DCC8;
+  --shadow: 0 2px 12px rgba(61,46,30,0.06);
+  --shadow-hover: 0 4px 20px rgba(61,46,30,0.1);
+  --radius: 16px;
+  --radius-sm: 10px;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+body {
+  font-family: 'Noto Sans SC', sans-serif;
+  background: var(--bg);
+  color: var(--text-dark);
+  min-height: 100vh;
+  line-height: 1.6;
+  -webkit-font-smoothing: antialiased;
+}
+
+.container { max-width: 480px; margin: 0 auto; padding: 0 20px 80px; }
+.header { padding: 32px 0 20px; text-align: center; }
+.header-logo { font-family: 'Noto Serif SC', serif; font-size: 22px; font-weight: 700; color: var(--gold); letter-spacing: 2px; margin-bottom: 4px; }
+.camp-name { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; }
+
+/* ===== 春天装饰 ===== */
+.spring-decor { position: fixed; inset: 0; pointer-events: none; overflow: hidden; z-index: 0; }
+.deco-sun { position: absolute; top: -30px; right: 30px; width: 90px; height: 90px; background: radial-gradient(circle, #FFE066 30%, #FFD700 60%, transparent 70%); border-radius: 50%; opacity: 0.7; }
+.deco-cloud { position: absolute; background: white; border-radius: 50px; opacity: 0.5; }
+.deco-cloud-1 { top: 60px; left: -20px; width: 80px; height: 30px; animation: cloudDrift 18s ease-in-out infinite; }
+.deco-cloud-2 { top: 100px; right: 20px; width: 60px; height: 22px; animation: cloudDrift 24s ease-in-out infinite reverse; }
+@keyframes cloudDrift { 0%, 100% { transform: translateX(0); } 50% { transform: translateX(20px); } }
+.deco-flower { position: absolute; font-size: 28px; animation: floatUp 6s ease-in-out infinite; }
+.deco-flower-1 { top: 18%; left: 8%; font-size: 24px; animation-delay: 0s; }
+.deco-flower-2 { top: 30%; right: 10%; font-size: 20px; animation-delay: 1.5s; }
+.deco-flower-3 { bottom: 28%; left: 5%; font-size: 22px; animation-delay: 3s; }
+.deco-flower-4 { bottom: 22%; right: 8%; font-size: 26px; animation-delay: 0.8s; }
+@keyframes floatUp { 0%, 100% { transform: translateY(0) rotate(0deg); opacity: 0.8; } 50% { transform: translateY(-10px) rotate(8deg); opacity: 1; } }
+.deco-leaf { position: absolute; width: 20px; height: 30px; background: #8DB48E; border-radius: 50% 0 50% 0; opacity: 0.5; }
+.deco-leaf-1 { top: 42%; left: 3%; transform: rotate(-30deg); }
+.deco-leaf-2 { bottom: 18%; right: 5%; transform: rotate(45deg); background: #A8C5A0; }
+.deco-leaf-3 { bottom: 35%; right: 3%; transform: rotate(20deg); width: 14px; height: 22px; }
+.deco-bird { position: absolute; top: 22%; right: 18%; font-size: 16px; animation: birdBob 4s ease-in-out infinite; }
+@keyframes birdBob { 0%, 100% { transform: translateY(0) translateX(0); } 25% { transform: translateY(-6px) translateX(3px); } 75% { transform: translateY(3px) translateX(-3px); } }
+.deco-butterfly { position: absolute; font-size: 18px; animation: butterflyFly 7s ease-in-out infinite; }
+.deco-bf-1 { top: 50%; left: 12%; animation-delay: 2s; }
+@keyframes butterflyFly { 0%, 100% { transform: translate(0, 0) rotate(0deg); } 33% { transform: translate(15px, -20px) rotate(10deg); } 66% { transform: translate(-5px, -10px) rotate(-5deg); } }
+
+/* ===== 登录页 ===== */
+.login-card { background: var(--card-bg); border-radius: var(--radius); padding: 40px 28px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-top: 60px; position: relative; z-index: 1; }
+.login-card h2 { font-family: 'Noto Serif SC', serif; font-size: 20px; font-weight: 600; color: var(--text-dark); margin-bottom: 6px; text-align: center; }
+.login-card p { font-size: 13px; color: var(--text-muted); text-align: center; margin-bottom: 28px; }
+.login-input { width: 100%; padding: 14px 16px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 16px; font-family: 'Noto Sans SC', sans-serif; color: var(--text-dark); background: var(--bg); outline: none; transition: border-color 0.2s; margin-bottom: 16px; text-align: center; letter-spacing: 2px; }
+.login-input:focus { border-color: var(--gold); }
+.login-input::placeholder { color: #c4b49a; }
+.login-btn { width: 100%; padding: 14px; background: var(--gold); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 16px; font-family: 'Noto Sans SC', sans-serif; font-weight: 500; cursor: pointer; transition: all 0.2s; }
+.login-btn:hover { background: #b8952f; transform: translateY(-1px); box-shadow: 0 4px 12px rgba(201,168,76,0.3); }
+
+/* ===== 进度卡片 ===== */
+.progress-card { background: var(--card-bg); border-radius: var(--radius); padding: 24px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 20px; }
+.progress-header { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 16px; }
+.day-badge { font-family: 'Noto Serif SC', serif; font-size: 13px; color: var(--gold); font-weight: 600; background: var(--gold-light); padding: 4px 12px; border-radius: 20px; }
+.streak-info { font-size: 12px; color: var(--text-muted); }
+.streak-info strong { color: var(--gold); font-weight: 600; }
+.progress-title { font-family: 'Noto Serif SC', serif; font-size: 18px; font-weight: 600; color: var(--text-dark); margin-bottom: 14px; }
+.progress-bar-wrap { background: var(--border); border-radius: 8px; height: 6px; overflow: hidden; }
+.progress-bar-fill { height: 100%; background: linear-gradient(90deg, var(--gold), #e8c96a); border-radius: 8px; transition: width 0.6s cubic-bezier(0.4, 0, 0.2, 1); }
+.progress-stats { display: flex; justify-content: space-between; margin-top: 10px; font-size: 12px; color: var(--text-muted); }
+.progress-stats strong { color: var(--text-dark); }
+
+/* ===== 勋章 ===== */
+.medals { display: flex; align-items: center; gap: 6px; margin-top: 16px; padding-top: 16px; border-top: 1px solid var(--border); }
+.medals-label { font-size: 12px; color: var(--text-muted); margin-right: 4px; }
+.medal { width: 28px; height: 28px; border-radius: 50%; background: var(--gold); color: #fff; font-size: 11px; font-weight: 700; display: flex; align-items: center; justify-content: center; box-shadow: 0 2px 6px rgba(201,168,76,0.3); }
+.medal-empty { background: var(--medal-inactive); color: transparent; box-shadow: none; }
+
+/* ===== 任务列表 ===== */
+.tasks-section { margin-bottom: 20px; }
+.section-label { font-size: 12px; color: var(--text-muted); letter-spacing: 1px; margin-bottom: 12px; font-weight: 500; }
+.task-card { background: var(--card-bg); border-radius: var(--radius); padding: 18px 20px; box-shadow: var(--shadow); border: 1px solid var(--border); margin-bottom: 12px; transition: all 0.2s; }
+.task-card:hover { box-shadow: var(--shadow-hover); }
+.task-card.checked { border-color: var(--green); background: var(--green-light); }
+.task-top { display: flex; align-items: center; gap: 12px; }
+.task-check-btn { width: 24px; height: 24px; border-radius: 50%; border: 2px solid var(--border); background: transparent; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; color: transparent; font-size: 12px; }
+.task-card.checked .task-check-btn { background: var(--green); border-color: var(--green); color: #fff; }
+.task-info { flex: 1; }
+.task-name { font-size: 15px; font-weight: 500; color: var(--text-dark); margin-bottom: 2px; }
+.task-desc { font-size: 12px; color: var(--text-muted); }
+.task-star { font-size: 12px; color: var(--gold); font-weight: 600; }
+.task-textarea { width: 100%; margin-top: 12px; padding: 10px 12px; border: 1.5px solid var(--border); border-radius: var(--radius-sm); font-size: 13px; font-family: 'Noto Sans SC', sans-serif; color: var(--text-dark); background: var(--bg); resize: none; outline: none; line-height: 1.6; min-height: 70px; transition: border-color 0.2s; }
+.task-textarea:focus { border-color: var(--gold); }
+.task-textarea::placeholder { color: #c4b49a; }
+.task-textarea[readonly] { background: var(--border); color: var(--text-muted); cursor: not-allowed; }
+.task-card-optional { opacity: 0.85; }
+.task-card-optional .task-name { color: var(--text-muted); }
+.task-optional-tag { font-size: 10px; color: var(--text-muted); background: var(--border); padding: 1px 6px; border-radius: 8px; margin-left: 4px; font-weight: 400; }
+
+/* ===== 已提交横幅 ===== */
+.submitted-banner { background: var(--green-light); border: 1px solid var(--green); border-radius: var(--radius-sm); padding: 8px 16px; text-align: center; margin-bottom: 12px; font-size: 13px; color: var(--green); font-weight: 500; }
+
+/* ===== 提交按钮 ===== */
+.submit-section { margin: 20px 0; }
+.submit-btn { width: 100%; padding: 16px; background: var(--gold); color: #fff; border: none; border-radius: var(--radius); font-size: 16px; font-family: 'Noto Sans SC', sans-serif; font-weight: 600; cursor: pointer; transition: all 0.2s; box-shadow: 0 4px 16px rgba(201,168,76,0.3); display: flex; flex-direction: column; align-items: center; gap: 2px; animation: submitPulse 2s ease-in-out infinite; }
+@keyframes submitPulse { 0%, 100% { box-shadow: 0 4px 16px rgba(201,168,76,0.3); } 50% { box-shadow: 0 4px 28px rgba(201,168,76,0.55); } }
+.submit-btn:hover { background: #b8952f; transform: translateY(-2px); box-shadow: 0 6px 20px rgba(201,168,76,0.4); }
+.submit-btn small { font-size: 11px; font-weight: 400; opacity: 0.85; }
+
+/* ===== 底部日期 ===== */
+.date-nav { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
+.date-nav-btn { background: none; border: 1px solid var(--border); border-radius: var(--radius-sm); padding: 6px 12px; font-size: 12px; color: var(--text-muted); cursor: pointer; transition: all 0.2s; font-family: 'Noto Sans SC', sans-serif; }
+.date-nav-btn:hover:not(:disabled) { border-color: var(--gold); color: var(--gold); }
+.date-nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+.current-date-label { font-size: 13px; color: var(--text-muted); }
+
+/* ===== Toast ===== */
+.toast { position: fixed; top: 24px; left: 50%; transform: translateX(-50%) translateY(-20px); background: var(--text-dark); color: #fff; padding: 10px 24px; border-radius: 40px; font-size: 14px; opacity: 0; transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1); pointer-events: none; z-index: 9999; white-space: nowrap; }
+.toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+
+/* ===== 动画 ===== */
+@keyframes checkPop { 0% { transform: scale(1); } 50% { transform: scale(1.2); } 100% { transform: scale(1); } }
+@keyframes fadeIn { from { opacity: 0; transform: translateY(8px); } to { opacity: 1; transform: translateY(0); } }
+.animate-in { animation: fadeIn 0.4s ease-out forwards; }
+.task-card.checked .task-check-btn { animation: checkPop 0.3s ease-out; }
+
+/* ===== 庆祝弹窗 ===== */
+.celebration-overlay { position: fixed; inset: 0; background: rgba(61, 46, 30, 0.5); z-index: 9000; display: flex; align-items: center; justify-content: center; padding: 24px; animation: overlayFadeIn 0.4s ease-out; }
+@keyframes overlayFadeIn { from { opacity: 0; } to { opacity: 1; } }
+.celebration-card { background: var(--card-bg); border-radius: 24px; padding: 36px 28px; max-width: 340px; width: 100%; text-align: center; box-shadow: 0 16px 48px rgba(61, 46, 30, 0.2); border: 1.5px solid var(--gold-light); animation: cardPop 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); }
+@keyframes cardPop { from { transform: scale(0.7); opacity: 0; } to { transform: scale(1); opacity: 1; } }
+.celebration-icon { font-size: 52px; margin-bottom: 16px; display: block; animation: iconBounce 0.6s ease-out 0.3s both; }
+@keyframes iconBounce { 0% { transform: scale(0); } 60% { transform: scale(1.2); } 100% { transform: scale(1); } }
+.celebration-day { font-family: 'Noto Serif SC', serif; font-size: 13px; color: var(--gold); font-weight: 600; letter-spacing: 2px; margin-bottom: 10px; }
+.celebration-quote { font-family: 'Noto Serif SC', serif; font-size: 18px; font-weight: 600; color: var(--text-dark); line-height: 1.7; margin-bottom: 24px; }
+.celebration-sub { font-size: 13px; color: var(--text-muted); margin-bottom: 24px; line-height: 1.6; }
+.celebration-medal { width: 64px; height: 64px; border-radius: 50%; background: linear-gradient(135deg, #C9A84C, #F5D97A); color: #fff; font-size: 28px; font-weight: 700; display: flex; align-items: center; justify-content: center; margin: 0 auto 20px; box-shadow: 0 4px 16px rgba(201, 168, 76, 0.5); animation: medalShine 2s ease-in-out infinite; }
+@keyframes medalShine { 0%, 100% { box-shadow: 0 4px 16px rgba(201,168,76,0.5); } 50% { box-shadow: 0 4px 32px rgba(201,168,76,0.8), 0 0 60px rgba(245,217,122,0.4); } }
+.celebration-close { width: 100%; padding: 12px; background: var(--gold); color: #fff; border: none; border-radius: var(--radius-sm); font-size: 15px; font-family: 'Noto Sans SC', sans-serif; cursor: pointer; transition: all 0.2s; }
+.celebration-close:hover { background: #b8952f; }
+
+/* ===== 烟花 ===== */
+.fireworks-canvas { position: fixed; inset: 0; pointer-events: none; z-index: 8999; }
+
+/* ===== 响应式 ===== */
+@media (max-width: 480px) { .container { padding: 0 16px 80px; } .progress-card { padding: 20px; } }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  <script>
+// ===== 学员端 JS =====
+
+const STORAGE_KEY = 'guixu_checkin_data_v2';
+
+const DEFAULT_TASKS = [
+  { id: 'morning_water', name: '早起温水', desc: '温饮归元  唤醒身体', type: 'single', star: 1, required: true },
+  { id: 'life_anchor',   name: '生活锚点',   desc: '给自己设一个小确幸：整理一处小空间，或者每小时站起来运动3分钟…… 在这个锚点里，你不是谁的谁，你只是你自己。', type: 'text', star: 1, required: true },
+  { id: 'evening_review',name: '晚间复盘',   desc: '睡前5分钟想想：今天让你微笑的小事，或者想感谢的人。\n不管今天过得如何，辛苦啦，现在的你很棒！', type: 'text', star: 1, required: true },
+  { id: 'breakfast',     name: '早餐',        desc: '慢品晨光，温养此心',     type: 'single', star: 1, required: false },
+  { id: 'lunch',         name: '中餐',        desc: '细嚼慢咽，观照当下',     type: 'single', star: 1, required: false },
+  { id: 'dinner',        name: '晚餐',        desc: '卸下尘劳，好好吃饭',     type: 'single', star: 1, required: false },
+];
+
+const DAY_QUOTES = [
+  '你的出发，比完美更重要。',
+  '做到的每一件小事，都是内在秩序的一块砖。',
+  '一个锚点，胜过一千个计划。',
+  '让复盘成为每日的礼物。',
+  '进步不是线性的，是每一个"微小动作"的叠加。',
+  '每一刻的觉知，都是光。',
+  null,
+];
+const DAY7_QUOTE = '所谓奇迹，不过是平凡人坚持了不平凡的7天。\n恭喜你，完成了这场自我进化的穿越之旅。';
+
+function isRequiredDone(student, dateStr) {
+  const dayTasks = student.tasks[dateStr];
+  if (!dayTasks) return false;
+  for (const task of DEFAULT_TASKS) {
+    if (!task.required) continue;
+    if (task.type === 'text') {
+      if (!dayTasks[task.id] || dayTasks[task.id].trim().length === 0) return false;
+    } else {
+      if (!dayTasks[task.id]) return false;
+    }
+  }
+  return true;
+}
+
+function showCelebration({ dayNum, isDay7 }) {
+  startFireworks(isDay7);
+  const overlay = document.createElement('div');
+  overlay.className = 'celebration-overlay';
+  overlay.id = 'celebrationOverlay';
+  const quote = isDay7 ? DAY7_QUOTE : (DAY_QUOTES[dayNum - 1] || DAY_QUOTES[DAY_QUOTES.length - 1]);
+  overlay.innerHTML = `
+    <div class="celebration-card">
+      ${isDay7 ? `<div class="celebration-medal">7</div>` : `<span class="celebration-icon">${['🌱','🌿','🌾','🍃','🪴','☘️'][dayNum - 1] || '🌸'}</span>`}
+      <div class="celebration-day">第 ${dayNum} 天打卡完成</div>
+      <div class="celebration-quote">${quote.replace(/\n/g, '<br>')}</div>
+      <div class="celebration-sub">${isDay7 ? '你坚持了整整7天，这是属于你的勋章。' : '今日任务全部完成，你正在书写自己的节律。'}</div>
+      <button class="celebration-close" id="celebrationCloseBtn">太棒了！</button>
+    </div>`;
+  document.body.appendChild(overlay);
+  document.getElementById('celebrationCloseBtn').addEventListener('click', () => overlay.remove());
+  overlay.addEventListener('click', e => { if (e.target === overlay) overlay.remove(); });
+}
+
+// ===== 烟花引擎 =====
+const fireworks = [];
+let fwCanvas, fwCtx, fwAnimId;
+
+function createFireworksCanvas() {
+  let canvas = document.getElementById('fireworksCanvas');
+  if (!canvas) {
+    canvas = document.createElement('canvas');
+    canvas.id = 'fireworksCanvas';
+    canvas.className = 'fireworks-canvas';
+    document.body.appendChild(canvas);
+  }
+  canvas.width = window.innerWidth;
+  canvas.height = window.innerHeight;
+  return canvas;
+}
+
+function randomColor() {
+  return ['#C9A84C','#F5D97A','#7BAE7F','#F9C27C','#E8A0BF','#A8D8EA','#FF9A8B'][Math.floor(Math.random() * 7)];
+}
+
+function createParticle(x, y, color) {
+  const angle = Math.random() * Math.PI * 2;
+  const speed = Math.random() * 6 + 2;
+  return { x, y, vx: Math.cos(angle) * speed, vy: Math.sin(angle) * speed, alpha: 1, color, decay: Math.random() * 0.02 + 0.015, size: Math.random() * 3 + 1 };
+}
+
+function startFireworks(big = false) {
+  fwCanvas = createFireworksCanvas();
+  fwCtx = fwCanvas.getContext('2d');
+  for (let i = 0; i < (big ? 8 : 4); i++) setTimeout(() => launchRocket(big), i * 200);
+  const interval = setInterval(() => { for (let i = 0; i < (big ? 3 : 1); i++) launchRocket(big); }, big ? 600 : 1200);
+  function launchRocket(big) {
+    const x = Math.random() * fwCanvas.width * 0.8 + fwCanvas.width * 0.1;
+    const y = fwCanvas.height * 0.3 + Math.random() * fwCanvas.height * 0.3;
+    fireworks.push({ x, y, targetY: y - (big ? 200 : 120) - Math.random() * 100, vy: -10, color: randomColor(), big, particles: [], exploded: false });
+  }
+  function animate() {
+    fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height);
+    for (let i = fireworks.length - 1; i >= 0; i--) {
+      const fw = fireworks[i];
+      if (!fw.exploded) {
+        fw.vy += 0.3; fw.y += fw.vy; fw.x += (Math.random() - 0.5) * 2;
+        fwCtx.beginPath(); fwCtx.arc(fw.x, fw.y, fw.big ? 4 : 2.5, 0, Math.PI * 2); fwCtx.fillStyle = fw.color; fwCtx.globalAlpha = 0.9; fwCtx.fill();
+        fwCtx.beginPath(); fwCtx.moveTo(fw.x, fw.y); fwCtx.lineTo(fw.x, fw.y - 15);
+        const grad = fwCtx.createLinearGradient(fw.x, fw.y, fw.x, fw.y - 15);
+        grad.addColorStop(0, fw.color + 'AA'); grad.addColorStop(1, 'transparent');
+        fwCtx.strokeStyle = grad; fwCtx.lineWidth = fw.big ? 3 : 2; fwCtx.stroke();
+        if (fw.vy >= 0 || fw.y <= fw.targetY) {
+          fw.exploded = true;
+          for (let j = 0; j < (fw.big ? 80 : 40); j++) fw.particles.push(createParticle(fw.x, fw.y, fw.color));
+        }
+      } else {
+        for (let j = fw.particles.length - 1; j >= 0; j--) {
+          const p = fw.particles[j];
+          p.x += p.vx; p.y += p.vy; p.vy += 0.08; p.vx *= 0.98; p.alpha -= p.decay;
+          if (p.alpha <= 0) { fw.particles.splice(j, 1); continue; }
+          fwCtx.beginPath(); fwCtx.arc(p.x, p.y, p.size, 0, Math.PI * 2); fwCtx.fillStyle = p.color; fwCtx.globalAlpha = p.alpha; fwCtx.fill();
+        }
+        fwCtx.globalAlpha = 1;
+        if (fw.particles.length === 0) fireworks.splice(i, 1);
+      }
+    }
+    fwAnimId = requestAnimationFrame(animate);
+  }
+  animate();
+  setTimeout(() => { cancelAnimationFrame(fwAnimId); fwCtx.clearRect(0, 0, fwCanvas.width, fwCanvas.height); fireworks.length = 0; clearInterval(interval); }, big ? 6000 : 4000);
+}
+
+// ===== 数据层 =====
+function getData() { try { return JSON.parse(localStorage.getItem(STORAGE_KEY)) || {}; } catch { return {}; } }
+function saveData(data) { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); }
+function getStudent(name) { const data = getData(); return data.students?.[name] || null; }
+
+function initStudent(name) {
+  const data = getData();
+  if (!data.students) data.students = {};
+  const today = todayStr();
+  if (!data.students[name]) {
+    data.students[name] = { firstCheckIn: today, checkInDays: [], tasks: {}, totalStars: 0, submittedDates: [] };
+  } else {
+    const stu = data.students[name];
+    if (!stu.submittedDates) stu.submittedDates = [];
+    Object.keys(stu.tasks).forEach(dateStr => {
+      const dayTasks = stu.tasks[dateStr];
+      if (dayTasks.meals && typeof dayTasks.meals === 'object') {
+        if (dayTasks.meals.早 && !dayTasks.breakfast) dayTasks.breakfast = true;
+        if (dayTasks.meals.午 && !dayTasks.lunch)    dayTasks.lunch   = true;
+        if (dayTasks.meals.晚 && !dayTasks.dinner)   dayTasks.dinner  = true;
+      }
+    });
+  }
+  saveData(data);
+  return data.students[name];
+}
+
+function ensureTasksForDay(name, dateStr) {
+  const data = getData();
+  const student = data.students[name];
+  if (!student.tasks[dateStr]) {
+    student.tasks[dateStr] = {};
+    DEFAULT_TASKS.forEach(t => { student.tasks[dateStr][t.id] = (t.type === 'text') ? '' : false; });
+  }
+  saveData(data);
+  return student.tasks[dateStr];
+}
+
+// ===== 工具函数 =====
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  const weekdays = ['周日','周一','周二','周三','周四','周五','周六'];
+  return `${d.getMonth()+1}月${d.getDate()}日 ${weekdays[d.getDay()]}`;
+}
+function getDayNumber(firstCheckIn, now) {
+  const start = new Date(firstCheckIn + 'T12:00:00');
+  const end = new Date(now + 'T12:00:00');
+  return Math.floor((end - start) / 86400000) + 1;
+}
+function getConsecutiveDays(checkInDays) {
+  if (!checkInDays || checkInDays.length === 0) return 0;
+  const sorted = [...checkInDays].sort();
+  let consecutive = 1;
+  for (let i = sorted.length - 1; i > 0; i--) {
+    const diff = (new Date(sorted[i] + 'T12:00:00') - new Date(sorted[i-1] + 'T12:00:00')) / 86400000;
+    if (diff === 1) consecutive++; else break;
+  }
+  return consecutive;
+}
+function getMedalCount(student) { return Math.floor(student.checkInDays.length / 7); }
+function calcTodayStars(student, dateStr) {
+  const dayTasks = student.tasks[dateStr];
+  if (!dayTasks) return { done: 0, total: DEFAULT_TASKS.reduce((s, t) => s + t.star, 0) };
+  let done = 0;
+  DEFAULT_TASKS.forEach(t => {
+    if (t.type === 'text') { if (dayTasks[t.id] && dayTasks[t.id].trim().length > 0) done += t.star; }
+    else { if (dayTasks[t.id]) done += t.star; }
+  });
+  return { done, total: DEFAULT_TASKS.reduce((s, t) => s + t.star, 0) };
+}
+function calcTotalStars(student) {
+  let total = 0;
+  Object.values(student.tasks || {}).forEach(dayTasks => {
+    DEFAULT_TASKS.forEach(t => {
+      if (t.type === 'text') { if (dayTasks[t.id] && dayTasks[t.id].trim().length > 0) total += t.star; }
+      else { if (dayTasks[t.id]) total += t.star; }
+    });
+  });
+  return total;
+}
+
+// ===== UI =====
+let currentStudent = null;
+let currentViewDate = todayStr();
+
+function showToast(msg) {
+  let toast = document.getElementById('toast');
+  if (!toast) { toast = document.createElement('div'); toast.id = 'toast'; document.body.appendChild(toast); }
+  toast.textContent = msg; toast.classList.add('show');
+  setTimeout(() => toast.classList.remove('show'), 2000);
+}
+
+function renderLogin() {
+  const app = document.getElementById('app');
+  const savedName = localStorage.getItem('guixu_current_student');
+  app.innerHTML = `
+    <div class="spring-decor" aria-hidden="true">
+      <div class="deco-sun"></div>
+      <div class="deco-cloud deco-cloud-1"></div>
+      <div class="deco-cloud deco-cloud-2"></div>
+      <div class="deco-flower deco-flower-1">🌸</div>
+      <div class="deco-flower deco-flower-2">🌷</div>
+      <div class="deco-flower deco-flower-3">🌱</div>
+      <div class="deco-flower deco-flower-4">🌼</div>
+      <div class="deco-leaf deco-leaf-1"></div>
+      <div class="deco-leaf deco-leaf-2"></div>
+      <div class="deco-leaf deco-leaf-3"></div>
+      <div class="deco-bird deco-bird-1"></div>
+      <div class="deco-butterfly deco-bf-1"></div>
+    </div>
+    <div class="header">
+      <div class="header-logo">归 序</div>
+      <div class="camp-name">7日营 · 打卡工具</div>
+    </div>
+    <div class="login-card animate-in">
+      <h2>欢迎回来</h2>
+      <p>输入你的名字，即可开始今日打卡</p>
+      <input class="login-input" type="text" id="nameInput" placeholder="请输入你的名字" value="${savedName || ''}" maxlength="20" autocomplete="off" />
+      <button class="login-btn" id="enterBtn">进入打卡</button>
+    </div>`;
+  document.getElementById('enterBtn').addEventListener('click', () => {
+    const name = document.getElementById('nameInput').value.trim();
+    if (!name) { showToast('请输入名字'); return; }
+    localStorage.setItem('guixu_current_student', name);
+    currentStudent = name;
+    initStudent(name);
+    renderApp();
+  });
+  document.getElementById('nameInput').addEventListener('keydown', e => { if (e.key === 'Enter') document.getElementById('enterBtn').click(); });
+  setTimeout(() => document.getElementById('nameInput')?.focus(), 100);
+}
+
+function renderApp() {
+  const student = getStudent(currentStudent);
+  if (!student) { renderLogin(); return; }
+  const app = document.getElementById('app');
+  const today = todayStr();
+  const dayNum = getDayNumber(student.firstCheckIn, today);
+  const consecutive = getConsecutiveDays(student.checkInDays);
+  const medals = getMedalCount(student);
+  const { done: todayDone, total: todayTotal } = calcTodayStars(student, currentViewDate);
+  const progressPct = todayTotal > 0 ? Math.round((todayDone / todayTotal) * 100) : 0;
+  const isToday = currentViewDate === today;
+  const isFuture = currentViewDate > today;
+  const isSubmitted = student.submittedDates?.includes(currentViewDate) || false;
+  const canEdit = isToday && !isSubmitted && !isFuture;
+
+  let medalsHtml = '';
+  for (let i = 0; i < 4; i++) {
+    if (i < medals) medalsHtml += `<div class="medal" title="7日勋章">7</div>`;
+    else medalsHtml += `<div class="medal medal-empty" title="还需${(i+1)*7 - student.checkInDays.length}天解锁">7</div>`;
+  }
+
+  let tasksHtml = DEFAULT_TASKS.map(task => {
+    const dayTasks = ensureTasksForDay(currentStudent, currentViewDate);
+    let checked = false, subHtml = '';
+    if (task.type === 'text') {
+      const textVal = dayTasks[task.id] || '';
+      checked = textVal.trim().length > 0;
+      subHtml = `<textarea class="task-textarea" data-task="${task.id}" placeholder="${task.desc}" ${!canEdit ? 'readonly' : ''}>${textVal}</textarea>`;
+    } else {
+      checked = !!dayTasks[task.id];
+    }
+    const optionalTag = !task.required ? `<span class="task-optional-tag">可选</span>` : '';
+    return `<div class="task-card ${checked && !isFuture ? 'checked' : ''} ${!task.required ? 'task-card-optional' : ''}" data-task-id="${task.id}">
+      <div class="task-top">
+        <button class="task-check-btn" data-task="${task.id}" ${!canEdit ? 'disabled' : ''}>✓</button>
+        <div class="task-info">
+          <div class="task-name">${task.name} ${optionalTag}</div>
+          ${task.type !== 'text' ? `<div class="task-desc">${task.desc}</div>` : ''}
+        </div>
+        <div class="task-star">+${task.star}★</div>
+      </div>
+      ${subHtml}
+    </div>`;
+  }).join('');
+
+  const dates = [];
+  const baseDate = new Date(); baseDate.setHours(0,0,0,0);
+  for (let i = 0; i < 7; i++) { const d = new Date(baseDate); d.setDate(d.getDate() + i); dates.push(d.toISOString().split('T')[0]); }
+  const currentIdx = dates.indexOf(currentViewDate);
+  const todaySubmitted = student.submittedDates?.includes(today) || false;
+  const requiredDone = isRequiredDone(student, today);
+  const showSubmitBtn = isToday && !isSubmitted && requiredDone;
+
+  app.innerHTML = `
+    <div class="header">
+      <div class="header-logo">归 序</div>
+      <div class="camp-name">7日营 · 打卡工具</div>
+    </div>
+    <div class="container">
+      ${isToday && isSubmitted ? `<div class="submitted-banner"><span>✓ 今日已提交打卡</span></div>` : ''}
+      <div class="progress-card animate-in">
+        <div class="progress-header">
+          <span class="day-badge">第 ${dayNum} 天</span>
+          <span class="streak-info">连续 <strong>${consecutive}</strong> 天</span>
+        </div>
+        <div class="progress-title">${isToday ? '今日打卡' : formatDate(currentViewDate) + ' 打卡记录'}</div>
+        <div class="progress-bar-wrap"><div class="progress-bar-fill" style="width: ${progressPct}%"></div></div>
+        <div class="progress-stats">
+          <span>${isToday ? '已完成' : '当日完成'} <strong>${todayDone}</strong> / ${todayTotal} 项</span>
+          <span>累计 <strong>${calcTotalStars(student)}</strong> ★</span>
+        </div>
+        <div class="medals">
+          <span class="medals-label">7日勋章</span>
+          ${medalsHtml}
+          ${medals === 0 ? '<span style="font-size:12px;color:#c4b49a">还需' + (7 - student.checkInDays.length) + '天解锁</span>' : ''}
+        </div>
+      </div>
+      <div class="date-nav">
+        <button class="date-nav-btn" id="prevDay" ${currentIdx <= 0 ? 'disabled' : ''}>◀ 上一天</button>
+        <span class="current-date-label">${formatDate(currentViewDate)}</span>
+        <button class="date-nav-btn" id="nextDay" ${currentIdx >= dates.length - 1 ? 'disabled' : ''} ${!isToday || !todaySubmitted ? 'disabled' : ''}>下一天 ▶</button>
+      </div>
+      <div class="tasks-section">
+        <div class="section-label">每日任务</div>
+        ${tasksHtml}
+      </div>
+      ${showSubmitBtn ? `<div class="submit-section"><button class="submit-btn" id="submitDayBtn"><span>提交今日打卡</span><small>完成所有必填项后解锁</small></button></div>` : ''}
+      <div style="text-align:center;margin-top:24px;">
+        <button id="switchStudent" style="background:none;border:none;color:#c4b49a;font-size:12px;cursor:pointer;font-family:'Noto Sans SC',sans-serif;text-decoration:underline">切换账号 / 重新开始</button>
+      </div>
+    </div>`;
+
+  document.getElementById('switchStudent').addEventListener('click', () => { localStorage.removeItem('guixu_current_student'); currentStudent = null; renderLogin(); });
+  document.getElementById('prevDay').addEventListener('click', () => { const idx = dates.indexOf(currentViewDate); if (idx > 0) { currentViewDate = dates[idx - 1]; renderApp(); } });
+  document.getElementById('nextDay').addEventListener('click', () => { const idx = dates.indexOf(currentViewDate); const stu = getStudent(currentStudent); if (idx < dates.length - 1 && isToday && (stu.submittedDates?.includes(today))) { currentViewDate = dates[idx + 1]; renderApp(); } });
+  document.querySelectorAll('.task-check-btn:not([disabled])').forEach(btn => { btn.addEventListener('click', e => { e.stopPropagation(); toggleTask(btn.getAttribute('data-task'), currentViewDate); }); });
+  document.querySelectorAll('.task-textarea:not([readonly])').forEach(ta => { ta.addEventListener('input', e => { saveTextTask(ta.getAttribute('data-task'), ta.value, currentViewDate); }); });
+  const submitBtn = document.getElementById('submitDayBtn');
+  if (submitBtn) submitBtn.addEventListener('click', handleSubmit);
+}
+
+function toggleTask(taskId, dateStr) {
+  const data = getData();
+  const student = data.students[currentStudent];
+  ensureTasksForDay(currentStudent, dateStr);
+  const was = student.tasks[dateStr][taskId];
+  student.tasks[dateStr][taskId] = !was;
+  if (!was && !student.checkInDays.includes(dateStr)) student.checkInDays.push(dateStr);
+  saveData(data);
+  renderApp();
+  if (!was) { const task = DEFAULT_TASKS.find(t => t.id === taskId); showToast(`${task?.name || '任务'}打卡完成 ✓`); }
+}
+
+function handleSubmit() {
+  const data = getData();
+  const student = data.students[currentStudent];
+  const today = todayStr();
+  if (!isRequiredDone(student, today)) { showToast('请先完成所有必填任务'); return; }
+  if (student.submittedDates?.includes(today)) { showToast('今日已提交'); return; }
+  if (!student.submittedDates) student.submittedDates = [];
+  student.submittedDates.push(today);
+  if (!student.checkInDays.includes(today)) student.checkInDays.push(today);
+  saveData(data);
+  startFireworks(false);
+  setTimeout(() => { const stu = getStudent(currentStudent); const dayNum = getDayNumber(stu.firstCheckIn, today); showCelebration({ dayNum, isDay7: dayNum === 7 }); }, 400);
+  renderApp();
+}
+
+function saveTextTask(taskId, value, dateStr) {
+  const data = getData();
+  const student = data.students[currentStudent];
+  ensureTasksForDay(currentStudent, dateStr);
+  student.tasks[dateStr][taskId] = value;
+  if (value.trim().length > 0 && !student.checkInDays.includes(dateStr)) student.checkInDays.push(dateStr);
+  saveData(data);
+  const today = todayStr();
+  const studentRef = getStudent(currentStudent);
+  const { done, total } = calcTodayStars(studentRef, currentViewDate);
+  const pct = total > 0 ? Math.round((done / total) * 100) : 0;
+  const barFill = document.querySelector('.progress-bar-fill');
+  const statsEl = document.querySelector('.progress-stats');
+  if (barFill) barFill.style.width = pct + '%';
+  if (statsEl) statsEl.innerHTML = `<span>${currentViewDate === today ? '已完成' : '当日完成'} <strong>${done}</strong> / ${total} 项</span><span>累计 <strong>${calcTotalStars(studentRef)}</strong> ★</span>`;
+  const taskCard = document.querySelector(`[data-task-id="${taskId}"]`);
+  if (taskCard) { value.trim().length > 0 ? taskCard.classList.add('checked') : taskCard.classList.remove('checked'); }
+  const stuRef = getStudent(currentStudent);
+  const requiredDone = isRequiredDone(stuRef, currentViewDate);
+  const isToday = currentViewDate === todayStr();
+  const isSubbed = stuRef.submittedDates?.includes(currentViewDate) || false;
+  let submitSection = document.querySelector('.submit-section');
+  if (isToday && !isSubbed) {
+    if (requiredDone && !submitSection) {
+      const tasksSection = document.querySelector('.tasks-section');
+      if (tasksSection) {
+        const div = document.createElement('div');
+        div.className = 'submit-section';
+        div.innerHTML = `<button class="submit-btn" id="submitDayBtn"><span>提交今日打卡</span><small>完成所有必填项后解锁</small></button>`;
+        tasksSection.after(div);
+        div.querySelector('#submitDayBtn').addEventListener('click', handleSubmit);
+      }
+    } else if (!requiredDone && submitSection) { submitSection.remove(); }
+  }
+}
+
+function init() {
+  const savedName = localStorage.getItem('guixu_current_student');
+  if (savedName && getStudent(savedName)) { currentStudent = savedName; currentViewDate = todayStr(); renderApp(); }
+  else renderLogin();
+}
+document.addEventListener('DOMContentLoaded', init);
+  </script>
+</body>
+</html>
