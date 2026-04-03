@@ -141,13 +141,19 @@ body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-
 var STORAGE_KEY = 'guixu_checkin_data_v2';
 var ADMIN_PASSWORD = '4266';
 
+// JSONBin 云同步配置
+var JSONBIN_API = 'https://api.jsonbin.io/v3/bins';
+var JSONBIN_KEY = '$2a$10$9MgSVwtSiU7dg6/lOLJQI.CquFtaT3gKxBvss9KKjBo.v8vHneiG6';
+var MASTER_BIN_KEY = 'guixu_master_bin_id'; // localStorage key for master bin ID
+var SYNC_ENABLED = true;
+
 var DEFAULT_TASKS = [
-  { id: 'morning_water', name: '早起喝一杯温水', desc: '温饮归元 唤醒身体', type: 'single', star: 1, required: true },
-  { id: 'life_anchor',   name: '生活锚点',   desc: '每天设一个小动作：整理一处空间，每小时起来运动3分钟……', type: 'text', star: 1, required: true },
-  { id: 'evening_review', name: '晚间复盘',   desc: '睡前5分钟复盘：今天让你微笑的小事，或者你想感谢的人……', type: 'text', star: 1, required: true },
-  { id: 'breakfast',      name: '早餐',        desc: '慢品晨光，温养此心',     type: 'single', star: 1, required: false },
-  { id: 'lunch',          name: '中餐',        desc: '细嚼慢咽，观照当下',     type: 'single', star: 1, required: false },
-  { id: 'dinner',         name: '晚餐',        desc: '卸下尘劳，好好吃饭',     type: 'single', star: 1, required: false }
+  { id: 'morning_water', name: '早起温水', desc: '温饮归元 唤醒身体', type: 'single', star: 1, required: true },
+  { id: 'life_anchor',   name: '生活锚点',   desc: '每天设一个小动作', type: 'text', star: 1, required: true },
+  { id: 'evening_review', name: '晚间复盘',   desc: '睡前5分钟复盘', type: 'text', star: 1, required: true },
+  { id: 'breakfast',      name: '早餐',        desc: '慢品晨光',     type: 'single', star: 1, required: false },
+  { id: 'lunch',          name: '中餐',        desc: '细嚼慢咽',     type: 'single', star: 1, required: false },
+  { id: 'dinner',         name: '晚餐',        desc: '好好吃饭',     type: 'single', star: 1, required: false }
 ];
 
 var DAY_QUOTES = [
@@ -210,9 +216,203 @@ function getData() {
 function saveData(data) {
   try {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+    // 云端同步（异步，不阻塞）
+    if (SYNC_ENABLED && currentStudent && data.students && data.students[currentStudent]) {
+      syncStudentToCloud(data.students[currentStudent]);
+    }
   } catch (e) {
     console.warn('存储失败:', e);
   }
+}
+
+// ===== JSONBin 云端同步 =====
+
+// 获取或创建 master bin
+function getOrCreateMasterBin() {
+  return new Promise(function(resolve, reject) {
+    var masterBinId = localStorage.getItem(MASTER_BIN_KEY);
+    if (masterBinId) {
+      resolve(masterBinId);
+      return;
+    }
+    // 创建新的 master bin
+    var xhr = new XMLHttpRequest();
+    xhr.open('POST', JSONBIN_API, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    xhr.setRequestHeader('X-Master-Key', JSONBIN_KEY);
+    xhr.onload = function() {
+      if (xhr.status === 200 || xhr.status === 201) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          var binId = resp.metadata.id;
+          localStorage.setItem(MASTER_BIN_KEY, binId);
+          resolve(binId);
+        } catch (e) {
+          reject(e);
+        }
+      } else {
+        reject(new Error('创建 master bin 失败: ' + xhr.status));
+      }
+    };
+    xhr.onerror = function() { reject(new Error('网络错误')); };
+    xhr.send(JSON.stringify({ students: {}, version: 1 }));
+  });
+}
+
+// 读取 master bin 内容
+function fetchMasterBin() {
+  return new Promise(function(resolve, reject) {
+    var masterBinId = localStorage.getItem(MASTER_BIN_KEY);
+    if (!masterBinId) {
+      resolve({ students: {} });
+      return;
+    }
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', JSONBIN_API + '/' + masterBinId, true);
+    xhr.setRequestHeader('X-Master-Key', JSONBIN_KEY);
+    xhr.onload = function() {
+      if (xhr.status === 200) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          resolve(resp.record || { students: {} });
+        } catch (e) {
+          resolve({ students: {} });
+        }
+      } else {
+        resolve({ students: {} });
+      }
+    };
+    xhr.onerror = function() { resolve({ students: {} }); };
+    xhr.send();
+  });
+}
+
+// 更新 master bin（增量更新单个学员）
+function updateMasterBinStudent(name, studentData) {
+  return new Promise(function(resolve, reject) {
+    var masterBinId = localStorage.getItem(MASTER_BIN_KEY);
+    if (!masterBinId) {
+      resolve();
+      return;
+    }
+    // 先读取当前 master bin，再更新
+    var xhr = new XMLHttpRequest();
+    xhr.open('GET', JSONBIN_API + '/' + masterBinId, true);
+    xhr.setRequestHeader('X-Master-Key', JSONBIN_KEY);
+    xhr.onload = function() {
+      var masterData = { students: {} };
+      if (xhr.status === 200) {
+        try {
+          var resp = JSON.parse(xhr.responseText);
+          masterData = resp.record || { students: {} };
+        } catch (e) {}
+      }
+      // 增量更新该学员数据
+      masterData.students[name] = studentData;
+      // 写回
+      var xhr2 = new XMLHttpRequest();
+      xhr2.open('PUT', JSONBIN_API + '/' + masterBinId, true);
+      xhr2.setRequestHeader('Content-Type', 'application/json');
+      xhr2.setRequestHeader('X-Master-Key', JSONBIN_KEY);
+      xhr2.onload = function() {
+        if (xhr2.status === 200) resolve();
+        else reject(new Error('更新 master bin 失败: ' + xhr2.status));
+      };
+      xhr2.onerror = function() { reject(new Error('网络错误')); };
+      xhr2.send(JSON.stringify(masterData));
+    };
+    xhr.onerror = function() { reject(new Error('网络错误')); };
+    xhr.send();
+  });
+}
+
+// 云端同步学员数据（每次打卡保存时调用）
+function syncStudentToCloud(student) {
+  if (!SYNC_ENABLED) return;
+  getOrCreateMasterBin().then(function() {
+    updateMasterBinStudent(currentStudent, student);
+  }).catch(function(e) {
+    console.warn('云同步失败:', e);
+  });
+}
+
+// 从云端 master bin 删除指定学员
+function deleteStudentFromCloud(name) {
+  var masterBinId = localStorage.getItem(MASTER_BIN_KEY);
+  if (!masterBinId) return;
+  var xhr = new XMLHttpRequest();
+  xhr.open('GET', JSONBIN_API + '/' + masterBinId, true);
+  xhr.setRequestHeader('X-Master-Key', JSONBIN_KEY);
+  xhr.onload = function() {
+    if (xhr.status === 200) {
+      try {
+        var masterData = JSON.parse(xhr.responseText).record || { students: {} };
+        delete masterData.students[name];
+        var xhr2 = new XMLHttpRequest();
+        xhr2.open('PUT', JSONBIN_API + '/' + masterBinId, true);
+        xhr2.setRequestHeader('Content-Type', 'application/json');
+        xhr2.setRequestHeader('X-Master-Key', JSONBIN_KEY);
+        xhr2.send(JSON.stringify(masterData));
+      } catch (e) {}
+    }
+  };
+  xhr.send();
+}
+
+// 营长后台从云端获取所有数据
+function fetchCloudData() {
+  return new Promise(function(resolve, reject) {
+    if (!SYNC_ENABLED) {
+      resolve(getData());
+      return;
+    }
+    fetchMasterBin().then(function(masterData) {
+      // 合并本地和云端数据
+      var localData = getData();
+      var cloudStudents = masterData.students || {};
+      var localStudents = localData.students || {};
+
+      // 以云端为准，补充本地独有的学员
+      var mergedStudents = {};
+      var allNames = {};
+      var n;
+      for (n in cloudStudents) allNames[n] = true;
+      for (n in localStudents) allNames[n] = true;
+
+      for (var name in allNames) {
+        var cloudStu = cloudStudents[name] || {};
+        var localStu = localStudents[name] || {};
+        // 深度合并tasks
+        var mergedTasks = {};
+        var allDates = {};
+        var td;
+        for (td in (cloudStu.tasks || {})) allDates[td] = true;
+        for (td in (localStu.tasks || {})) allDates[td] = true;
+        for (td in allDates) {
+          mergedTasks[td] = Object.assign({}, (cloudStu.tasks || {}[td]) || {}, (localStu.tasks || {}[td]) || {});
+        }
+        mergedStudents[name] = {
+          firstCheckIn: cloudStu.firstCheckIn || localStu.firstCheckIn || '',
+          checkInDays: (cloudStu.checkInDays && cloudStu.checkInDays.length > (localStu.checkInDays || []).length) ? cloudStu.checkInDays : (localStu.checkInDays || []),
+          submittedDates: (cloudStu.submittedDates && cloudStu.submittedDates.length > (localStu.submittedDates || []).length) ? cloudStu.submittedDates : (localStu.submittedDates || []),
+          totalStars: cloudStu.totalStars || localStu.totalStars || 0,
+          tasks: mergedTasks
+        };
+      }
+      resolve({ students: mergedStudents });
+    }).catch(function(e) {
+      console.warn('云端拉取失败，使用本地数据:', e);
+      resolve(getData());
+    });
+  });
+}
+
+// 初始化云端连接（页面加载时调用）
+function initCloudSync() {
+  if (!SYNC_ENABLED) return;
+  getOrCreateMasterBin().catch(function(e) {
+    console.warn('云端初始化失败:', e);
+  });
 }
 
 function getStudent(name) {
@@ -400,7 +600,24 @@ function renderAdminLogin() {
 // ===== 营长后台 =====
 function renderAdminDashboard() {
   var app = document.getElementById('app');
-  var data = getData();
+  app.innerHTML =
+    '<div class="header">' +
+    '<div class="header-logo">归 序</div>' +
+    '<div class="camp-name">7日营 · 营长后台</div>' +
+    '</div>' +
+    '<div class="container">' +
+    '<div style="text-align:center;padding:60px 0;color:#8B7355;">正在从云端加载数据...</div>' +
+    '</div>';
+  
+  fetchCloudData().then(function(data) {
+    renderAdminDashboardFromData(data);
+  }).catch(function() {
+    renderAdminDashboardFromData(getData());
+  });
+}
+
+function renderAdminDashboardFromData(data) {
+  var app = document.getElementById('app');
   var students = data.students || {};
   var studentNames = Object.keys(students);
   
@@ -454,20 +671,20 @@ function renderAdminDashboard() {
     '</div>' +
     '</div>';
   
-  document.getElementById('exportCsvBtn').addEventListener('click', exportFullCSV);
+  document.getElementById('exportCsvBtn').addEventListener('click', function() { exportFullCSV(students); });
   document.getElementById('adminLogout').addEventListener('click', renderLogin);
   
   var detailBtns = document.querySelectorAll('.view-detail-btn');
   for (var k = 0; k < detailBtns.length; k++) {
     detailBtns[k].addEventListener('click', (function(n) {
-      return function() { showStudentDetail(n); };
+      return function() { showStudentDetail(n, students); };
     })(detailBtns[k].getAttribute('data-name')));
   }
 }
 
 // ===== 学员详情弹窗 =====
-function showStudentDetail(name) {
-  var student = getStudent(name);
+function showStudentDetail(name, studentsData) {
+  var student = (studentsData && studentsData[name]) ? studentsData[name] : getStudent(name);
   if (!student) return;
   
   var overlay = document.createElement('div');
@@ -520,6 +737,10 @@ function showStudentDetail(name) {
       var data = getData();
       delete data.students[name];
       saveData(data);
+      // 同时从云端 master bin 删除
+      if (SYNC_ENABLED) {
+        deleteStudentFromCloud(name);
+      }
       overlay.remove();
       renderAdminDashboard();
       showToast('已删除学员数据');
@@ -528,8 +749,8 @@ function showStudentDetail(name) {
 }
 
 // ===== 导出 CSV =====
-function exportFullCSV() {
-  var data = getData();
+function exportFullCSV(studentsData) {
+  var data = studentsData || getData();
   var students = data.students || {};
   var studentNames = Object.keys(students);
   
@@ -814,6 +1035,7 @@ function saveTextTask(taskId, value, dateStr) {
 // ===== 初始化 =====
 function init() {
   try {
+    initCloudSync(); // 启动云端同步
     var savedName = localStorage.getItem('guixu_current_student');
     if (savedName && getStudent(savedName)) {
       currentStudent = savedName;
