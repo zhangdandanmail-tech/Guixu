@@ -142,10 +142,12 @@ var STORAGE_KEY = 'guixu_checkin_data_v2';
 var ADMIN_PASSWORD = '4266';
 
 // JSONBin 云同步配置
-var JSONBIN_API = 'https://api.jsonbin.io/v3/bins';
+var JSONBIN_API = 'https://api.jsonbin.io/v3/b';
 var JSONBIN_KEY = '$2a$10$9MgSVwtSiU7dg6/lOLJQI.CquFtaT3gKxBvss9KKjBo.v8vHneiG6';
 var MASTER_BIN_KEY = 'guixu_master_bin_id'; // localStorage key for master bin ID
 var SYNC_ENABLED = true;
+// 所有用户共用的 master bin ID（确保数据共享）
+var SHARED_MASTER_BIN_ID = '69cfc76baaba882197bfe06a';
 
 var DEFAULT_TASKS = [
   { id: 'morning_water', name: '早起温水', desc: '温饮归元 唤醒身体', type: 'single', star: 1, required: true },
@@ -227,35 +229,16 @@ function saveData(data) {
 
 // ===== JSONBin 云端同步 =====
 
-// 获取或创建 master bin
+// 获取或创建 master bin（使用共用 bin ID 确保所有用户共享同一份数据）
 function getOrCreateMasterBin() {
   return new Promise(function(resolve, reject) {
     var masterBinId = localStorage.getItem(MASTER_BIN_KEY);
-    if (masterBinId) {
-      resolve(masterBinId);
-      return;
+    // 优先使用已有的 bin ID，否则使用共用 bin ID
+    if (!masterBinId) {
+      masterBinId = SHARED_MASTER_BIN_ID;
+      localStorage.setItem(MASTER_BIN_KEY, masterBinId);
     }
-    // 创建新的 master bin
-    var xhr = new XMLHttpRequest();
-    xhr.open('POST', JSONBIN_API, true);
-    xhr.setRequestHeader('Content-Type', 'application/json');
-    xhr.setRequestHeader('X-Master-Key', JSONBIN_KEY);
-    xhr.onload = function() {
-      if (xhr.status === 200 || xhr.status === 201) {
-        try {
-          var resp = JSON.parse(xhr.responseText);
-          var binId = resp.metadata.id;
-          localStorage.setItem(MASTER_BIN_KEY, binId);
-          resolve(binId);
-        } catch (e) {
-          reject(e);
-        }
-      } else {
-        reject(new Error('创建 master bin 失败: ' + xhr.status));
-      }
-    };
-    xhr.onerror = function() { reject(new Error('网络错误')); };
-    xhr.send(JSON.stringify({ students: {}, version: 1 }));
+    resolve(masterBinId);
   });
 }
 
